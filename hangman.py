@@ -26,11 +26,16 @@ class HangmanGame:
 
     def initialize_game(self):
         if not self.word_list:
-            return "Kelime listesi yüklenemedi!"
+            print("Kelime listesi yüklenemedi!")  # Konsola mesaj basılıyor
+            self.selected_word = ""  # Boş kelime
+            return False  # Başarısız olduğunu belirt
+
         self.selected_word = random.choice(self.word_list)
         self.masked_word = ["_" if char != " " else " " for char in self.selected_word]
         self.guessed_letters.clear()
         self.wrong_guesses = 0
+        return True  # Başarılı başlatıldı
+
 
     def update_word(self, letter):
         if letter not in self.selected_word:
@@ -86,13 +91,17 @@ class HangmanUI(QWidget):
         self.move(window_geometry.topLeft())
 
     def start_game_ui(self):
-        self.game.initialize_game()
+        if not self.game.initialize_game():
+            self.word_label.setText("Kelime listesi yüklenemedi!\nLütfen kelime dosyanızı kontrol edin.")
+            return
+
         self.word_label.setText(" ".join(self.game.masked_word))
         self.letter_input.setEnabled(True)
         self.letter_input.setFocus()
         self.new_game_button.setVisible(False)
         self.exit_button.setVisible(False)
         self.update()
+
 
     def check_letter(self):
         letter = self.letter_input.text().lower()
