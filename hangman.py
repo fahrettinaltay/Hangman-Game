@@ -1,11 +1,21 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QFileDialog
 from PyQt5.QtGui import QFont, QIcon, QPainter, QPen
 from PyQt5.QtCore import Qt
 import sys, random
 
 class WordLoader:
-    def __init__(self, filename):
-        self.filename = filename
+    def __init__(self):
+        self.filename = ""
+
+    def load_file(self):
+        # Dosya seçme penceresi aç
+        options = QFileDialog.Options()
+        self.filename, _ = QFileDialog.getOpenFileName(None, "Kelime Listesi Seç", "", "Text Files (*.txt);;All Files (*)", options=options)
+
+        if not self.filename:
+            return []
+        
+        return self.load_words()
 
     def load_words(self):
         try:
@@ -26,16 +36,12 @@ class HangmanGame:
 
     def initialize_game(self):
         if not self.word_list:
-            print("Kelime listesi yüklenemedi!")  # Konsola mesaj basılıyor
-            self.selected_word = ""  # Boş kelime
-            return False  # Başarısız olduğunu belirt
-
+            return False  # Kelime listesi boşsa, oyun başlatılamaz
         self.selected_word = random.choice(self.word_list)
         self.masked_word = ["_" if char != " " else " " for char in self.selected_word]
         self.guessed_letters.clear()
         self.wrong_guesses = 0
-        return True  # Başarılı başlatıldı
-
+        return True  # Başarılı şekilde başlatıldı
 
     def update_word(self, letter):
         if letter not in self.selected_word:
@@ -92,7 +98,7 @@ class HangmanUI(QWidget):
 
     def start_game_ui(self):
         if not self.game.initialize_game():
-            self.word_label.setText("Kelime listesi yüklenemedi!\nLütfen kelime dosyanızı kontrol edin.")
+            self.word_label.setText("Kelime dosyası yüklenemedi!\nLütfen kelime dosyanızı kontrol edin.")
             return
 
         self.word_label.setText(" ".join(self.game.masked_word))
@@ -101,7 +107,6 @@ class HangmanUI(QWidget):
         self.new_game_button.setVisible(False)
         self.exit_button.setVisible(False)
         self.update()
-
 
     def check_letter(self):
         letter = self.letter_input.text().lower()
@@ -157,7 +162,6 @@ class HangmanUI(QWidget):
         if self.game.wrong_guesses > 5:
             painter.drawLine(300, 300, 350, 350)
 
-
 class StartWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -171,7 +175,7 @@ class StartWindow(QWidget):
 
         self.start_button = QPushButton("Oyuna Başla", self)
         self.start_button.clicked.connect(self.start_game)
-
+        
         layout = QVBoxLayout()
         layout.addWidget(self.start_button)
         self.setLayout(layout)
@@ -183,13 +187,21 @@ class StartWindow(QWidget):
         self.move(window_geometry.topLeft())
 
     def start_game(self):
-        word_loader = WordLoader("tr-wordlist.txt")
-        word_list = word_loader.load_words()
+        word_loader = WordLoader()
+        word_list = word_loader.load_file()
+        if not word_list:
+            self.word_label.setText("Kelime dosyası seçilmedi veya boş.")
+            return
+
         game = HangmanGame(word_list)
         self.game_window = HangmanUI(game)
         self.game_window.start_game_ui()
         self.game_window.show()
         self.close()
+
+    def select_file(self):
+        word_loader = WordLoader()
+        word_loader.load_file()
 
 def main():
     app = QApplication(sys.argv)
